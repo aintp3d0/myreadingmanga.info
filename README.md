@@ -5,7 +5,7 @@ Downloads the manga images and converting to the PDF
 | :---: | :---: | :---: |
 | Frontend | Backend -> Create Task | Task Handler -> Script API |
 
-#### Brief: Full-Stack Web Application
+### Brief: Full-Stack Web Application
 States
 - [x] CLI
 - [ ] API
@@ -16,10 +16,10 @@ Functionality
 - [ ] Logging
 - [ ] Follow tags (author)
 
-#### Notes
+Notes
 - Project for study, main functionality lies on the `start` branch
 
-#### License
+### License
 MIT
 <br />
 Copyright (c) 2023 Nodaa Gaji
