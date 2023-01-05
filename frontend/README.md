@@ -1,0 +1,2 @@
+# Frontend (CRUD) Application
+- [ ] VueJS
