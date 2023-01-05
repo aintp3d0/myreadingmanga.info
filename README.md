@@ -1,6 +1,10 @@
 # myreadingmanga.info
 Downloads the manga images and converting to the PDF
 
+| App_1 | App_2 | App_3 |
+| :---: | :---: | :---: |
+| Frontend | Backend -> Create Task | Task Handler -> Script API |
+
 #### Brief: Full-Stack Web Application
 States
 - [x] CLI
