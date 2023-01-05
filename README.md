@@ -2,11 +2,12 @@
 Downloads the manga images and converting to the PDF
 
 #### Brief: Full-Stack Web Application
-- States
+States
 - [x] CLI
 - [ ] API
 - [ ] REST API
-- Functionality
+
+Functionality
 - [x] Download
 - [ ] Logging
 - [ ] Follow tags (author)
