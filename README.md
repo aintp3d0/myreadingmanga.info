@@ -1,6 +1,20 @@
 # myreadingmanga.info
-download Yaoi manga (parse porn content 18++)
+Downloads the manga images and converting to the PDF
 
-requirements.txt  :-> wget, bs4, lxml, requests
+#### Brief: Full-Stack Web Application
+- States
+- [x] CLI
+- [ ] API
+- [ ] REST API
+- Functionality
+- [x] Download
+- [ ] Logging
+- [ ] Follow tags (author)
 
-idk working or not:-> it was archived
+#### Notes
+- Project for study, main functionality lies on the `start` branch
+
+#### License
+MIT
+<br />
+Copyright (c) 2023 Nodaa Gaji
