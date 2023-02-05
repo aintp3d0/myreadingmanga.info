@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # coding=utf-8
 
-# __author__ = 'kira@-築城院 真鍳'
+# __author__ = 'Nodaa Gaji'
 
-import argparse #---------------------#
-from os import getcwd, mkdir, chdir #-#
-from sys import path #----------------#
-from time import sleep #--------------#
-from wget import download #-----------#
-from random import randint #----------#
-from shutil import copy, rmtree, move #
-from os.path import exists, dirname #-#
-from img2pdf import convert #---------#
+import argparse
+from os import getcwd, mkdir, chdir
+from sys import path
+from time import sleep
+from wget import download
+from random import randint
+from shutil import copy, rmtree, move
+from os.path import exists, dirname
+from img2pdf import convert
 from bs4 import BeautifulSoup as bs
 from requests import get
 
@@ -21,14 +21,7 @@ from requests import get
 
 
 def get_soup(url):
-    # source is blocked in RF
-    # return bs(get(url, proxies={'https': 'https://45.70.218.42:38866'}).text, 'lxml')
     return bs(get(url).text, 'lxml')
-
-# from crawling import chunks
-#parent = dirname(dirname(getcwd()))
-#path.append(parent)
-#from chunks import get_soup
 
 
 class Yaoi:
