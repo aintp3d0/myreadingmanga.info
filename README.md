@@ -5,7 +5,6 @@ Full-stack web application to track newly added manga
 > All contributions are very welcome! [TODO](./_data/readme/TODO.md)
 
 
-### Getting Started
 <details>
 <summary>Start this project</summary>
 <pre>
@@ -31,9 +30,3 @@ pip install -r requirements.txt
 ```bash
 python cli.py -h
 ```
-
-
-### License
-MIT
-<br />
-Copyright (c) 2023,2025 @ames0k0
