@@ -1,23 +1,10 @@
-# myreadingmanga.info
-Downloads the manga images and converting to the PDF
-> Project for study, main functionality lies on the `start` branch
+Full-stack web application to track newly added manga
 
-| App_1 | App_2 | App_3 |
-| :---: | :---: | :---: |
-| Frontend | Backend -> Create Task | Task Handler -> Script API |
-
-### Brief: Full-Stack Web Application
-States
-- [x] CLI
-- [ ] API
-- [ ] REST API
-
-Functionality
-- [x] Download
-- [ ] Logging
-- [ ] Follow tags (author)
+> [!NOTE]
+> Brief: Downloading Manga Images and Converting them to PDF<br />
+> All contributions are very welcome! [TODO](./data/_readme/TODO.md)
 
 ### License
 MIT
 <br />
-Copyright (c) 2023 Nodaa Gaji
+Copyright (c) 2023,2025 @ames0k0
