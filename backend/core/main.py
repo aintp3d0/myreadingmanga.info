@@ -16,6 +16,7 @@ class MyReadingManga:
         "download_all_chapters",
         "keep_downloaded_images",
         "sorted_manga_images",
+        "list_of_chapters",
     )
     manga_directory: Path = STATIC_DIRECTORY / "manga"
     image_directory: Path = STATIC_DIRECTORY / "saved"
@@ -35,7 +36,7 @@ class MyReadingManga:
         self.sorted_manga_images = []
         self._register_imgs = []
         self._list_of_pages = set()
-        self._list_of_chapters = set()
+        self.list_of_chapters: list[str] = []
 
     def _get_tag_links(self, pg, sp):
         if pg:
@@ -68,14 +69,45 @@ class MyReadingManga:
         else:
             self._list_of_pages.add(self._link)
 
-    async def process(self, process_chapters: bool = True) -> None:
-        """Processing the given manga `url`
+    async def search_manga_chapters(self) -> bool:
+        """Search for manga chapters
 
-        Parameters
-        ----------
-        process_chapters : bool = True
-            Process chapters for given manga `url`
+        Returns `False` if chapters were not found
         """
+        soup = await get_soup(self.url)
+
+        chapters_pagination = soup.find("div", class_="entry-pagination pagination")
+        if chapters_pagination is None:
+            self.error_messages.append("No chapters pagination were found!")
+            return False
+
+        chapters = chapters_pagination.find_all("a")
+        if not chapters:
+            self.error_messages.append("No chapters url were found!")
+            return False
+
+        for chapter in chapters:
+            chapter_url = chapter.get("href")
+            if chapter_url is None:
+                continue
+            self.list_of_chapters.append(chapter_url)
+
+        if not self.list_of_chapters:
+            self.error_messages.append("No chapters url were found!")
+            return False
+
+        return True
+
+    async def process(self) -> None:
+        """Processing the given manga `url`"""
+        if self.download_all_chapters:
+            chapters_found = await self.search_manga_chapters()
+            if not chapters_found:
+                self.list_of_chapters.append(self.url)
+        else:
+            self.list_of_chapters.append(self.url)
+
+        # for chapter_url in self.list_of_chapters:
         soup = await get_soup(self.url)
 
         for image in soup.find_all("img"):
@@ -86,21 +118,12 @@ class MyReadingManga:
                 continue
             self.sorted_manga_images.append(image_source)
 
-        # search chapters
-        if ch:
-            chapters = soup.find("div", "entry-pagination pagination")
-            if chapters:
-                for chapter in chapters.find_all("a"):
-                    try:
-                        self._list_of_chapters.add(chapter.get("href"))
-                    except Exception as e:
-                        print(e)
 
         self._get_manga(full_tag, ch_name)
 
         # FEAT: TODO/FIXME
-        # if self._list_of_chapters:
-        #     self._list_of_pages = self._list_of_chapters
+        # if self.list_of_chapters:
+        #     self._list_of_pages = self.list_of_chapters
         #     self._get_link(False, True)
 
     def _get_manga(self, ft, ch):
