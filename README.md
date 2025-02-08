@@ -4,7 +4,6 @@ Full-stack web application to track newly added manga
 > Brief: Downloading Manga Images and Converting them to PDF<br />
 > All contributions are very welcome! [TODO](./_data/readme/TODO.md)
 
-
 <details>
 <summary>Start this project</summary>
 <pre>
