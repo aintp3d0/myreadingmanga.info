@@ -4,7 +4,7 @@ if __name__ != "__main__":
 
 import argparse
 
-from core.main import MangaDownloader
+from core.main import MyReadingManga
 
 
 parser = argparse.ArgumentParser(
@@ -18,8 +18,14 @@ parser.add_argument(
     type=str,
 )
 parser.add_argument(
+    "--download-chapters",
+    help="Flag to download manga chapters, default is False",
+    type=bool,
+    default=False,
+)
+parser.add_argument(
     "--keep-images",
-    help="Flag to keep downloaded manga images",
+    help="Flag to keep downloaded manga images, default is False",
     type=bool,
     default=False,
 )
@@ -31,7 +37,8 @@ if not args.url:
     exit(0)
 
 
-md = MangaDownloader(
+mrm = MyReadingManga(
     url=args.m,
-    keep_images=args.keep_images,
+    download_all_chapters=args.download_chapters,
+    keep_downloaded_images=args.keep_images,
 )
