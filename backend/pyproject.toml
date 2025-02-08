@@ -8,3 +8,10 @@ dependencies = [
     "litestar>=2.14.0",
     "uvicorn>=0.34.0",
 ]
+
+[dependency-groups]
+cli = [
+    "bs4>=0.0.2",
+    "httpx>=0.28.1",
+    "img2pdf>=0.5.1",
+]

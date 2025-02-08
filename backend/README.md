@@ -1,5 +1,6 @@
 Backend application
 ```bash
+# FIXME: uv install --with-group cli
 uv run litestar --app main:app run -r
 ```
 
