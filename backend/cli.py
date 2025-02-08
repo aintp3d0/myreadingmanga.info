@@ -3,6 +3,7 @@ if __name__ != "__main__":
 
 
 import argparse
+
 from core.main import MangaDownloader
 
 
@@ -32,5 +33,5 @@ if not args.url:
 
 md = MangaDownloader(
     url=args.m,
-    remove_images=args.remove_images,
+    keep_images=args.keep_images,
 )

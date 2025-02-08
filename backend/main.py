@@ -1,6 +1,7 @@
 from litestar import Litestar, Controller, get, post, exceptions, status_codes
 
 from core import const, utils
+from core.main import MangaDownloader
 
 
 class Index(Controller):
@@ -22,7 +23,7 @@ class Manga(Controller):
     async def post(
         self,
         url: str,
-        remove_images: bool,
+        keep_images: bool,
     ) -> None:
         """Adding manga to process
 
@@ -30,8 +31,8 @@ class Manga(Controller):
         ----------
         url : str
             URL to the manga page
-        remove_images : bool
-            Flag to remove images after downloading
+        keep_images : bool
+            Flag to keep downloaded images
         """
         if not utils.is_site_host(url=url):
             raise exceptions.HTTPException(
@@ -39,7 +40,19 @@ class Manga(Controller):
                 detail=f"URL must start with: {const.SITE_HOST}",
                 status_code=status_codes.HTTP_417_EXPECTATION_FAILED,
             )
-        print(remove_images)
+
+        md = MangaDownloader(
+            url=url,
+            keep_images=keep_images,
+        )
+        # wait till the end
+        is_processed = await md.process()
+        if not is_processed:
+            # TODO: serialize error messages
+            return md.error_messages()
+
+        # TODO: serialize result data
+        return md.process_result()
 
 
 app = Litestar(route_handlers=[Index, Manga])
