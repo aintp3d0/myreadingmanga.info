@@ -5,12 +5,10 @@
 
 import argparse
 from os import getcwd, mkdir, chdir
-from sys import path
-from time import sleep
 from wget import download
 from random import randint
 from shutil import copy, rmtree, move
-from os.path import exists, dirname
+from os.path import exists
 from img2pdf import convert
 from bs4 import BeautifulSoup as bs
 from requests import get
@@ -121,11 +119,9 @@ class Yaoi:
         self._sort_manga_pages.clear()
 
     def _convert_to_pdf(self, name):
-        r"""
-                                            copy pdf to folder [ manga ] don't remove manga images
-        [--s | None] -> convert_to_pdf __ /
-                                          \
-                                            move pdf to folder [ manga ] and remove current folder
+        """PDF convertion and clean up
+
+        Removes downloaded images if `--s` flag not set (default)
         """
         pdf_ = name + ".pdf"
         with open(pdf_, 'wb') as file:
@@ -144,25 +140,30 @@ class Yaoi:
         self._register_imgs.clear()
         # bugg
 
-
     def _get_user_args(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--m", help="Download this manga", type=str)
-        parser.add_argument("--s", help="Don't remove downloaded manga photos", type=str)
+        parser.add_argument(
+            "--m",
+            help="Download this manga",
+            type=str,
+        )
+        parser.add_argument(
+            "--s",
+            help="Don't remove downloaded manga photos",
+            type=str,
+        )
         args = parser.parse_args()
 
         self._link = args.m
         self._save_photos = args.s
         if args.m == args.s:
             print("""
-    start_.py -h
+                                    EXM:
+                [if you need to save downloaded manga photos]
+--m https://myreadingmanga.info/seki-sabato-tsukuru-matsuri-no-mae-kr/ --s .
 
-                                        EXM:
-                    [if you need to save downloaded manga photos]
-    --m https://myreadingmanga.info/seki-sabato-tsukuru-matsuri-no-mae-kr/ --s true
-
-                            [if you need Only pdf manga]
-    --m https://myreadingmanga.info/seki-sabato-tsukuru-matsuri-no-mae-kr/
+                        [if you need Only pdf manga]
+--m https://myreadingmanga.info/seki-sabato-tsukuru-matsuri-no-mae-kr/
             """)
             exit(0)
 
