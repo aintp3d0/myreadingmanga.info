@@ -1,7 +1,7 @@
 Full-stack web application to track newly added manga
 
-> [!CRITICAL]
-> Use branch `start`, `main` is used as a development
+> [!CAUTION]
+> Use the branch `start`, `main` is used as a development
 
 > [!NOTE]
 > Brief: Downloading Manga Images and Converting them to PDF<br />
