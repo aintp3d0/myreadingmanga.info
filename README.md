@@ -1,5 +1,8 @@
 Full-stack web application to track newly added manga
 
+> [!CRITICAL]
+> Use branch `start`, `main` is used as a development
+
 > [!NOTE]
 > Brief: Downloading Manga Images and Converting them to PDF<br />
 > All contributions are very welcome! [TODO](./_data/readme/TODO.md)

@@ -5,7 +5,9 @@ from shutil import copy, rmtree, move
 from os.path import exists
 from pathlib import Path
 from collections import defaultdict
+from urllib.parse import urlparse
 
+import httpx
 from img2pdf import convert
 
 from const import STATIC_DIRECTORY
@@ -13,6 +15,14 @@ from utils import get_soup
 
 
 class MyReadingManga:
+    """Downloading manga images and converting it to PDF
+
+    process_result:
+        chapters:
+            link:
+            images:
+            manga:
+    """
     __slots__ = (
         "url",
         "download_all_chapters",
@@ -24,7 +34,7 @@ class MyReadingManga:
     manga_directory.mkdir(exist_ok=True)
     image_directory.mkdir(exist_ok=True)
     error_messages: dict[str, list[str]] = defaultdict(list)
-    process_result: list[str] = []
+    process_result: dict[str, list[str]] = defaultdict(list)
 
     def __init__(
         self,
@@ -70,7 +80,7 @@ class MyReadingManga:
         else:
             self._list_of_pages.add(self._link)
 
-    async def search_manga_chapters(self) -> bool:
+    async def search_manga_chapters(self) -> None:
         """Search for manga chapters
 
         Returns `False` if chapters were not found
@@ -85,14 +95,14 @@ class MyReadingManga:
             self.error_messages[self.url].append(
                 "No chapters pagination were found!",
             )
-            return False
+            return
 
         chapters = chapters_pagination.find_all("a")
         if not chapters:
             self.error_messages[self.url].append(
                 "No chapters url were found!",
             )
-            return False
+            return
 
         for chapter in chapters:
             chapter_url = chapter.get("href")
@@ -104,9 +114,22 @@ class MyReadingManga:
             self.error_messages[self.url].append(
                 "No chapters url were found!",
             )
-            return False
+            return
 
-        return True
+    async def download_chapter_image(
+        self,
+        chapter_url: str,
+        image_src: str,
+        url_to_path: dict[str, str],
+    ) -> None:
+        """Downloading chapter image"""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(image_src)
+            if response.status_code != 200:
+                self.error_messages[chapter_url].append(f"[?] {image_src}")
+                return
+
+            response.content
 
     async def process_chapter(self, chapter_url: str) -> None:
         """Processing the given manga `chapter_url`
@@ -115,7 +138,9 @@ class MyReadingManga:
         - AsyncIO task to download
         - Convert to pdf with their order
         """
-        sorted_manga_images: list[str] = []
+        sorted_chapter_images: list[str] = []
+        url_to_path: dict[str, str] = {}
+
         soup = await get_soup(self.url)
 
         for image in soup.find_all("img"):
@@ -126,21 +151,37 @@ class MyReadingManga:
                 continue
             if image_source.endswith(".gif"):
                 continue
-            sorted_manga_images.append(image_source)
+            sorted_chapter_images.append(image_source)
 
-        if not sorted_manga_images:
+        if not sorted_chapter_images:
             self.error_messages[chapter_url].append(
                 "No images were found",
             )
             return
+
+        chapter_name = urlparse(chapter_url).path
+        if not chapter_name:
+            chapter_name = chapter_name
+
+        chapter_path = anyio.Path()
+
+        async with asyncio.TaskGroup() as group:
+            for chapter_image in sorted_chapter_images:
+                group.create_task(
+                    self.download_chapter_image(
+                        chapter_url=chapter_url,
+                        image_src=chapter_image,
+                        url_to_path=url_to_path,
+                    )
+                )
 
         self._get_manga(full_tag, ch_name)
 
     async def process(self) -> None:
         """Processing the given manga `url`"""
         if self.download_all_chapters:
-            chapters_found = await self.search_manga_chapters()
-            if not chapters_found:
+            await self.search_manga_chapters()
+            if not self.list_of_chapters:
                 self.list_of_chapters.append(self.url)
         else:
             self.list_of_chapters.append(self.url)
@@ -150,11 +191,6 @@ class MyReadingManga:
                 group.create_task(
                     self.process_chapter(chapter_url),
                 )
-
-        # FEAT: TODO/FIXME
-        # if self.list_of_chapters:
-        #     self._list_of_pages = self.list_of_chapters
-        #     self._get_link(False, True)
 
     def _get_manga(self, ft, ch):
         chdir(self._save)
