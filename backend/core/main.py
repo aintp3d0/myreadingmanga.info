@@ -1,7 +1,5 @@
 import asyncio
-import warnings
 import shutil
-import pathlib
 from collections import defaultdict
 from urllib.parse import urlparse
 
@@ -32,11 +30,8 @@ class MyReadingManga:
         "_register_imgs",
         "_list_of_pages",
     )
-    manga_directory: pathlib.Path = STATIC_DIRECTORY / "manga"
-    image_directory: pathlib.Path = STATIC_DIRECTORY / "saved"
-    # TODO: Use anyio to `mkdir`
-    manga_directory.mkdir(exist_ok=True)
-    image_directory.mkdir(exist_ok=True)
+    manga_directory: anyio.Path = STATIC_DIRECTORY / "manga"
+    image_directory: anyio.Path = STATIC_DIRECTORY / "saved"
     error_messages: dict[str, list[str]] = defaultdict(list)
     process_result: dict[str, list[str]] = defaultdict(list)
 
@@ -206,8 +201,8 @@ class MyReadingManga:
         chapter_name = self.gen_chapter_name(chapter_url)
         chapter_manga_path = anyio.Path(self.manga_directory / chapter_name)
         chapter_image_path = anyio.Path(self.image_directory / chapter_name)
-        await chapter_manga_path.mkdir(exist_ok=True)
-        await chapter_image_path.mkdir(exist_ok=True)
+        await chapter_manga_path.mkdir(parents=True, exist_ok=True)
+        await chapter_image_path.mkdir(parents=True, exist_ok=True)
 
         async with asyncio.TaskGroup() as group:
             for chapter_image in sorted_chapter_images:

@@ -1,8 +1,8 @@
-from pathlib import Path
+import anyio
 
 
 SITE_HOST: str = "https://myreadingmanga.info"
-STATIC_DIRECTORY: Path = Path("static")
+STATIC_DIRECTORY: anyio.Path = anyio.Path("static")
 
 
 # TODO
