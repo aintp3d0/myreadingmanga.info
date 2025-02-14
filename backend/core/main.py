@@ -1,14 +1,13 @@
 import asyncio
-from os import mkdir, chdir
-from random import randint
-from shutil import copy, rmtree, move
-from os.path import exists
-from pathlib import Path
+import warnings
+import shutil
+import pathlib
 from collections import defaultdict
 from urllib.parse import urlparse
 
+import anyio
 import httpx
-from img2pdf import convert
+import img2pdf
 
 from const import STATIC_DIRECTORY
 from utils import get_soup
@@ -23,14 +22,19 @@ class MyReadingManga:
             images:
             manga:
     """
+
     __slots__ = (
         "url",
         "download_all_chapters",
         "keep_downloaded_images",
         "list_of_chapters",
+        # TODO: Remove / Refactor
+        "_register_imgs",
+        "_list_of_pages",
     )
-    manga_directory: Path = STATIC_DIRECTORY / "manga"
-    image_directory: Path = STATIC_DIRECTORY / "saved"
+    manga_directory: pathlib.Path = STATIC_DIRECTORY / "manga"
+    image_directory: pathlib.Path = STATIC_DIRECTORY / "saved"
+    # TODO: Use anyio to `mkdir`
     manga_directory.mkdir(exist_ok=True)
     image_directory.mkdir(exist_ok=True)
     error_messages: dict[str, list[str]] = defaultdict(list)
@@ -49,6 +53,7 @@ class MyReadingManga:
         self._list_of_pages = set()
         self.list_of_chapters: list[str] = []
 
+    # TODO: Refactor
     def _get_tag_links(self, pg, sp):
         if pg:
             list_of_manga = sp.find_all("a", "entry-title-link")
@@ -60,6 +65,7 @@ class MyReadingManga:
             for mg in list_of_manga:
                 self._list_of_pages.add(mg.get("href"))
 
+    # TODO: Refactor
     def get_tag(self):
         # FEAT: get tags
         if self._link.startswith("https://myreadingmanga.info/tag/"):
@@ -119,17 +125,51 @@ class MyReadingManga:
     async def download_chapter_image(
         self,
         chapter_url: str,
+        chapter_path: anyio.Path,
         image_src: str,
         url_to_path: dict[str, str],
     ) -> None:
-        """Downloading chapter image"""
+        """Downloading chapter image
+
+        Parameters
+        ----------
+        chapter_url : str
+        chapter_path : anyio.Path
+            Path to save chapter images
+        image_src : str
+            Chapter image url
+        url_to_path : dict[str, str]
+            Combine `chapter_url` with `chapter_image_path`
+        """
+        image_path = chapter_path / image_src.rsplit("/", maxsplit=1)[-1]
+
         async with httpx.AsyncClient() as client:
             response = await client.get(image_src)
             if response.status_code != 200:
                 self.error_messages[chapter_url].append(f"[?] {image_src}")
                 return
 
-            response.content
+        await image_path.write_bytes(response.content)
+
+        if not (await image_path.exists()):
+            self.error_messages[chapter_url].append(
+                f"Chapeter Image is not downloaded: {image_src}"
+            )
+            return
+
+        url_to_path[image_src] = image_path.as_posix()
+
+    def gen_chapter_name(self, chapter_url: str) -> str:
+        """Returns the generates chapter name"""
+        # NOTE: No path validation
+        return "-chapter-".join(
+            filter(
+                bool,
+                urlparse(
+                    url=chapter_url,
+                ).path.split("/"),
+            )
+        )
 
     async def process_chapter(self, chapter_url: str) -> None:
         """Processing the given manga `chapter_url`
@@ -163,27 +203,44 @@ class MyReadingManga:
         if not chapter_name:
             chapter_name = chapter_name
 
-        chapter_path = anyio.Path()
+        chapter_name = self.gen_chapter_name(chapter_url)
+        chapter_manga_path = anyio.Path(self.manga_directory / chapter_name)
+        chapter_image_path = anyio.Path(self.image_directory / chapter_name)
+        await chapter_manga_path.mkdir(exist_ok=True)
+        await chapter_image_path.mkdir(exist_ok=True)
 
         async with asyncio.TaskGroup() as group:
             for chapter_image in sorted_chapter_images:
                 group.create_task(
                     self.download_chapter_image(
                         chapter_url=chapter_url,
+                        chapter_path=chapter_image_path,
                         image_src=chapter_image,
                         url_to_path=url_to_path,
                     )
                 )
 
-        self._get_manga(full_tag, ch_name)
+        if not url_to_path:
+            self.error_messages[chapter_url].append(
+                "No images were saved",
+            )
+            return
+
+        await self.convert_chapter_to_pdf(
+            chapter_url=chapter_url,
+            chapter_name=chapter_name,
+            chapter_manga_path=chapter_manga_path,
+            chapter_image_path=chapter_image_path,
+            sorted_chapter_images=sorted_chapter_images,
+            url_to_path=url_to_path,
+        )
 
     async def process(self) -> None:
         """Processing the given manga `url`"""
         if self.download_all_chapters:
             await self.search_manga_chapters()
-            if not self.list_of_chapters:
-                self.list_of_chapters.append(self.url)
-        else:
+
+        if not self.list_of_chapters:
             self.list_of_chapters.append(self.url)
 
         async with asyncio.TaskGroup() as group:
@@ -192,43 +249,36 @@ class MyReadingManga:
                     self.process_chapter(chapter_url),
                 )
 
-    def _get_manga(self, ft, ch):
-        chdir(self._save)
-        if ch:
-            name = f"{ft.split('/')[-3]}_{ft.split('/')[-2]}"
-        else:
-            name = ft.split("/")[-2]
-        if not exists(name):
-            mkdir(name)
-            chdir(name)
-        else:
-            new_ = randint(0, 126)
-            name += str(new_)
-            mkdir(name)
-            chdir(name)
-        for i in self._sort_manga_pages:
-            if i.startswith("//"):
-                i = "http:" + i
-            id_ = download(i)
-            self._register_imgs.append(id_)
-        self._convert_to_pdf(name)
-
-    def _convert_to_pdf(self, name):
+    async def convert_chapter_to_pdf(
+        self,
+        chapter_url: str,
+        chapter_name: str,
+        chapter_manga_path: anyio.Path,
+        chapter_image_path: anyio.Path,
+        sorted_chapter_images: list[str],
+        url_to_path: dict[str, str],
+    ) -> None:
         """PDF convertion and clean up
 
-        Removes downloaded images if `--s` flag not set (default)
+        Removes downloaded images if `--keep-images` flag not set (default)
         """
-        pdf_ = name + ".pdf"
-        with open(pdf_, "wb") as file:
-            ppt = [exists(pth) for pth in self._register_imgs]
-            if all(ppt):
-                # file.write(convert(self._register_imgs))
-                file.write(convert([i for i in self._register_imgs]))
-                if self._save_photos:
-                    copy(pdf_, self._manga + "/" + pdf_)
-                else:
-                    move(pdf_, self._manga + "/" + pdf_)
-                    rmtree(self._save + "/" + name)
-            else:
-                print("all: ", ppt)
-                rmtree(self._save + "/" + name)
+        manga_filepath = chapter_manga_path / f"{chapter_name}.pdf"
+        downloaded_chapter_images: list[str] = []
+
+        for image_src in sorted_chapter_images:
+            if image_src not in url_to_path:
+                continue
+            downloaded_chapter_images.append(url_to_path[image_src])
+
+        manga_file = img2pdf.convert(downloaded_chapter_images)
+        if manga_file is None:
+            self.error_messages[chapter_url].append(
+                "Could not convert chapter images of: "
+                f"{len(downloaded_chapter_images)}",
+            )
+            return
+
+        await manga_filepath.write_bytes(manga_file)
+
+        if not self.keep_downloaded_images:
+            shutil.rmtree(chapter_image_path)
